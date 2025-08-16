@@ -102,7 +102,13 @@ function processFile(filePath: string, options: ScriptOptions) {
   // Remove the legacy type property if option is passed
   const removeLegacyType = Boolean(options.removeType && data.type)
 
-  const newContentType = determineContentType(relativePath, data.type || '')
+  // Skip if contentType already exists and we're not removing legacy type
+  if (data.contentType && !removeLegacyType) {
+    console.log(`contentType already set on ${relativePath}`)
+    return { processed: true, updated: false }
+  }
+
+  const newContentType = data.contentType || determineContentType(relativePath, data.type || '')
 
   if (options.dryRun) {
     console.log(`\n${relativePath}`)
@@ -115,24 +121,9 @@ function processFile(filePath: string, options: ScriptOptions) {
     return { processed: true, updated: false }
   }
 
-  // Check if we're actually changing an existing contentType
-  const isChangingContentType = data.contentType && data.contentType !== newContentType
-  const isAddingContentType = !data.contentType
-
-  if (isChangingContentType) {
-    console.log(
-      `Changing contentType from '${data.contentType}' to '${newContentType}' on ${relativePath}`,
-    )
-  } else if (isAddingContentType) {
-    console.log(`Adding contentType '${newContentType}' on ${relativePath}`)
-  }
-
-  // Only update if there's actually a change needed
-  if (isChangingContentType || isAddingContentType) {
+  // Set the contentType property if it doesn't exist
+  if (!data.contentType) {
     data.contentType = newContentType
-  } else {
-    console.log(`contentType is already set to '${data.contentType}' on ${relativePath}`)
-    return { processed: true, updated: false }
   }
 
   let legacyTypeValue
